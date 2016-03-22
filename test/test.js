@@ -6,10 +6,12 @@ var PNG = require('pngjs').PNG,
     path = require('path'),
     match = require('../.');
 
-diffTest('1a', '1b', '1diff', 0.05, false, 143);
-diffTest('2a', '2b', '2diff', 0.05, false, 12439);
-diffTest('3a', '3b', '3diff', 0.05, false, 212);
-diffTest('4a', '4b', '4diff', 0.05, false, 36089);
+diffTest('1a', '1b', '1diff', 0.05, false, 88);
+diffTest('2a', '2b', '2diff', 0.05, false, 9805);
+diffTest('3a', '3b', '3diff', 0.05, false, 110);
+diffTest('4a', '4b', '4diff', 0.05, false, 24920);
+diffTest('5a', '5b', '5diff', 0.1, false, 40);
+diffTest('6a', '6b', '6diff', 0.1, false, 29);
 
 function diffTest(imgPath1, imgPath2, diffPath, threshold, includeAA, expectedMismatch) {
     var name = 'comparing ' + imgPath1 + ' to ' + imgPath2 +
@@ -31,11 +33,13 @@ function diffTest(imgPath1, imgPath2, diffPath, threshold, includeAA, expectedMi
                         includeAA: includeAA
                     });
 
-                    t.same(diff.data, expectedDiff.data, 'diff image');
                     t.same(mismatch, expectedMismatch, 'number of mismatched pixels');
                     t.same(mismatch, mismatch2, 'number of mismatched pixels');
+                    t.same(diff.data, expectedDiff.data, 'diff image');
 
-                    t.end();
+                    diff.pack()
+                        .pipe(fs.createWriteStream(path.join(__dirname, '/fixtures/' + imgPath1 + '.diff.png')))
+                        .on('close', function () { t.end(); });
                 });
             });
         });

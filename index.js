@@ -25,8 +25,10 @@ function pixelmatch(img1, img2, output, width, height, options) {
             // the color difference is above the threshold
             if (delta > maxDelta) {
                 // check it's a real rendering difference or just anti-aliasing
-                if (!options.includeAA && (antialiased(img1, x, y, width, height, img2) ||
-                                   antialiased(img2, x, y, width, height, img1))) {
+                if (!options.includeAA &&
+                    ((antialiased(img1, x, y, width, height, img2) ||
+                       antialiased(img2, x, y, width, height, img1)) ||
+                    checkAverages(img1, x, y, width, height, img2, maxDelta))) {
                     // one of the pixels is anti-aliasing; draw as yellow and do not count as difference
                     if (output) drawPixel(output, pos, 255, 255, 0);
 
@@ -46,6 +48,71 @@ function pixelmatch(img1, img2, output, width, height, options) {
 
     // return the number of different pixels
     return diff;
+}
+
+function checkAverages(img1, x1, y1, width, height, img2, maxDelta) {
+    var x0 = Math.max(x1 - 1, 0),
+        y0 = Math.max(y1 - 1, 0),
+        x2 = Math.min(x1 + 1, width - 1),
+        y2 = Math.min(y1 + 1, height - 1),
+        i, x, y,
+        color1, color2;
+
+    var surroundingMatches = 0,
+        surroundingCounts = 0;
+
+    for (x = x0; x <= x2; x++) {
+        for (y = y0; y <= y2; y++) {
+            if (x === x1 && y === y1) continue;
+
+            surroundingCounts++;
+
+            if (colorDelta(img1, img2, (y * width + x) * 4, (y * width + x) * 4) < maxDelta) {
+                surroundingMatches += 1;
+            } else if (colorDelta(img1, img2, (y * width + x) * 4, (y * width + x) * 4) < 2 * maxDelta) {
+                surroundingMatches += 0.5;
+            }
+        }
+    }
+
+    if (surroundingMatches > 3) {
+
+        color1 = [0, 0, 0, 0];
+        color2 = [0, 0, 0, 0];
+        for (x = x0; x <= x2; x++) {
+            for (i = 0; i < 4; i++) {
+                color1[i] += img1[(y1 * width + x) * 4 + i];
+                color2[i] += img2[(y1 * width + x) * 4 + i];
+            }
+        }
+        for (i = 0; i < 4; i++) {
+            color1[i] = Math.floor(color1[i] / (x2 - x0 + 1));
+            color2[i] = Math.floor(color2[i] / (x2 - x0 + 1));
+        }
+
+        if (colorDelta(color1, color2, 0, 0, true) < maxDelta) {
+            return true;
+        }
+
+        color1 = [0, 0, 0, 0];
+        color2 = [0, 0, 0, 0];
+        for (y = y0; y <= y2; y++) {
+            for (i = 0; i < 4; i++) {
+                color1[i] += img1[(y * width + x1) * 4 + i];
+                color2[i] += img2[(y * width + x1) * 4 + i];
+            }
+        }
+        for (i = 0; i < 4; i++) {
+            color1[i] = Math.floor(color1[i] / (y2 - y0 + 1));
+            color2[i] = Math.floor(color2[i] / (y2 - y0 + 1));
+        }
+
+        if (colorDelta(color1, color2, 0, 0, true) < maxDelta) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 // check if a pixel is likely a part of anti-aliasing;
