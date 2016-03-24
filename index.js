@@ -32,6 +32,11 @@ function pixelmatch(img1, img2, output, width, height, options) {
                     // one of the pixels is anti-aliasing; draw as yellow and do not count as difference
                     if (output) drawPixel(output, pos, 255, 255, 0);
 
+                } else if ((options.xDelta || options.yDelta) &&
+                    checkRange(img1, x, options.xDelta || 0, y, options.yDelta || 0, img2, maxDelta)) {
+                    // one of the pixels is offset; draw as yellow and do not count as difference
+                    if (output) drawPixel(output, pos, 255, 255, 0);
+
                 } else {
                     // found substantial difference not caused by anti-aliasing; draw it as red
                     if (output) drawPixel(output, pos, 255, 0, 0);
@@ -48,6 +53,40 @@ function pixelmatch(img1, img2, output, width, height, options) {
 
     // return the number of different pixels
     return diff;
+}
+
+function checkRange(img1, x1, xDelta, y1, yDelta, width, height, img2, maxDelta) {
+    var x0 = Math.max(x1 - xDelta, 0),
+        y0 = Math.max(y1 - yDelta, 0),
+        x2 = Math.min(x1 + xDelta, width - 1),
+        y2 = Math.min(y1 + yDelta, height - 1),
+        pos1 = (y1 * width + x1) * 4;
+
+    for (var x = x0; x <= x2; x++) {
+        if (x !== x1 && checkAll(x, x, Math.max(y1 - 1, 0), Math.min(y1 + 1, height - 1))) {
+            return true;
+        }
+    }
+    for (var y = y0; y <= y2; y++) {
+        if (y !== y1 && checkAll(Math.max(x1 - 1, 0), Math.min(x1 + 1, width - 1), y, y)) {
+            return true;
+        }
+    }
+
+    return false;
+
+    function checkAll(x0, x2, y0, y2) {
+        var x, y, pos2;
+        for (x = x0; x <= x2; x++) {
+            for (y = y0; y <= y2; y++) {
+                pos2 = (y * width + x) * 4;
+                if (colorDelta(img1, img2, pos1, pos2) > maxDelta) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 }
 
 function checkAverages(img1, x1, y1, width, height, img2, maxDelta) {

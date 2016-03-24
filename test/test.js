@@ -33,9 +33,9 @@ function diffTest(imgPath1, imgPath2, diffPath, threshold, includeAA, expectedMi
                         includeAA: includeAA
                     });
 
+                    t.same(diff.data, expectedDiff.data, 'diff image');
                     t.same(mismatch, expectedMismatch, 'number of mismatched pixels');
                     t.same(mismatch, mismatch2, 'number of mismatched pixels');
-                    t.same(diff.data, expectedDiff.data, 'diff image');
 
                     diff.pack()
                         .pipe(fs.createWriteStream(path.join(__dirname, '/fixtures/' + imgPath1 + '.diff.png')))
